@@ -1,2 +1,2 @@
-7cfcb477bd2ab907ffe5a733ed95e05f89b229f23c9728026a935ac239e22eec  fayda-buyer-dev-0.1.0-phone.apk
-98c3f24e15401162ad963b6e6aa42223cbb74b5b21fe1a19b4d2ce6e90876b73  fayda-seller-dev-0.1.0-phone.apk
+e9efea5f9f9e76051ccc5e8e84efb035f7a20323fd6a63498e25be09cdd31c41  fayda-buyer-dev-0.1.0-phone.apk
+993e6bc48e3cc9a4b2e8a4cf7dcf3b6ff255c8e9af49d31235c20049907da4ea  fayda-seller-dev-0.1.0-phone.apk
