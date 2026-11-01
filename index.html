@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self' https://*.supabase.co; base-uri 'none'; form-action 'none'">
+  <title>Fayda two-phone test plan</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="top">
+    <h1>Fayda two-phone test plan</h1>
+    <p class="muted">Phone A runs the Seller app, phone B the Buyer app. Mark each step Pass, Fail, Blocked or Skip, add a comment, and add or fix steps. Everyone sees the same results.</p>
+  </header>
+
+  <section class="me" aria-label="About you and this run">
+    <label>Your name <input id="who" maxlength="80" autocomplete="name" placeholder="Required to mark or comment"></label>
+    <label>Run <input id="run" maxlength="60" list="runs" placeholder="Run 1"></label>
+    <datalist id="runs"></datalist>
+    <label>Build <input id="build" maxlength="80" placeholder="e.g. 0.1.0 (phone)"></label>
+    <label>Phones <input id="device" maxlength="120" placeholder="e.g. Pixel 7 + Redmi Note 12"></label>
+  </section>
+
+  <section class="bar" aria-label="Summary and actions">
+    <div id="summary" class="summary" aria-live="polite"></div>
+    <div class="actions">
+      <label class="check"><input type="checkbox" id="mine"> Only my marks</label>
+      <button id="share" type="button">Copy link</button>
+      <button id="csv" type="button">Download CSV</button>
+      <button id="refresh" type="button">Refresh</button>
+    </div>
+  </section>
+
+  <p id="banner" class="banner" role="status" hidden></p>
+  <main id="plan" aria-live="off"></main>
+
+  <footer class="muted foot">
+    <p>Anyone with this link can mark steps, comment and edit steps. Nothing can be deleted: a removed step is only hidden. Results are kept per run, so start a new run (change the Run box) to test again from scratch.</p>
+    <p>If something fails: note the screen and the time in the comment. 429 "Too many requests": wait a minute (sign-in is limited to 20 a minute). No push: check notification permission.</p>
+  </footer>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
