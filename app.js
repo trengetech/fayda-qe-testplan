@@ -59,6 +59,8 @@
     while ((m = re.exec(text))) {
       if (m.index > last) frag.appendChild(document.createTextNode(text.slice(last, m.index)));
       var tok = m[0];
+      // a bare address at the end of a sentence must not swallow the full stop, comma or closing bracket
+      if (tok.slice(0, 4) === 'http') { tok = tok.replace(/[.,;:!?)]+$/, ''); re.lastIndex = m.index + tok.length; }
       if (tok.slice(0, 2) === '**') frag.appendChild(h('strong', { text: tok.slice(2, -2) }));
       else if (tok.charAt(0) === '[') {
         var parts = /^\[([^\]]+)\]\(([^)]+)\)$/.exec(tok);
