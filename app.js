@@ -43,6 +43,42 @@
     var d = new Date(iso);
     return isNaN(d) ? '' : d.toLocaleString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   }
+  // Case text may use a little formatting: lines starting with "- " are bullets, **bold**, [label](link) and bare https:// links.
+  // Built from DOM nodes, never innerHTML. A link must be https://... or a file in this site's downloads/ folder, nothing else.
+  function inline(text) {
+    var frag = document.createDocumentFragment();
+    var re = /(\*\*[^*\n]+\*\*|\[[^\]\n]+\]\([^)\s]+\)|https?:\/\/[^\s<>"')]+)/g;
+    var last = 0; var m;
+    var safe = function (u) { return /^https:\/\/[^\s]+$/.test(u) || /^downloads\/[\w.\-]+$/.test(u); };
+    var link = function (label, url) {
+      var a = h('a', { href: url, text: label });
+      if (url.indexOf('downloads/') === 0) a.setAttribute('download', '');
+      else { a.setAttribute('target', '_blank'); a.setAttribute('rel', 'noopener noreferrer'); }
+      return a;
+    };
+    while ((m = re.exec(text))) {
+      if (m.index > last) frag.appendChild(document.createTextNode(text.slice(last, m.index)));
+      var tok = m[0];
+      if (tok.slice(0, 2) === '**') frag.appendChild(h('strong', { text: tok.slice(2, -2) }));
+      else if (tok.charAt(0) === '[') {
+        var parts = /^\[([^\]]+)\]\(([^)]+)\)$/.exec(tok);
+        frag.appendChild(parts && safe(parts[2]) ? link(parts[1], parts[2]) : document.createTextNode(tok));
+      } else frag.appendChild(/^https:/.test(tok) ? link(tok, tok) : document.createTextNode(tok));
+      last = m.index + tok.length;
+    }
+    if (last < text.length) frag.appendChild(document.createTextNode(text.slice(last)));
+    return frag;
+  }
+  function rich(text) {
+    var frag = document.createDocumentFragment(); var list = null;
+    String(text).split('\n').forEach(function (line) {
+      var b = /^\s*[-•]\s+(.*)$/.exec(line);
+      if (b) { if (!list) { list = h('ul', { class: 'bul' }); frag.appendChild(list); } list.appendChild(h('li', null, inline(b[1]))); return; }
+      list = null;
+      if (line.trim()) frag.appendChild(h('p', { class: 'para' }, inline(line)));
+    });
+    return frag;
+  }
   function me() {
     return { name: clean(el.who.value, 80).trim(), run: clean(el.run.value, 60).trim() || 'Run 1', build: clean(el.build.value, 80).trim(), device: clean(el.device.value, 120).trim() };
   }
@@ -157,8 +193,8 @@
     var o = overall(marks);
     var card = h('article', { class: 'step' + (o ? ' status-' + o : ''), id: 'step-' + s.id });
     card.appendChild(h('h3', null, h('span', { class: 'num', text: n + '.' }), s.title, h('span', { class: 'pill ' + (o || 'none'), text: o ? LABEL[o] : 'Not run' })));
-    if (s.detail) card.appendChild(h('div', { class: 'detail', text: s.detail }));
-    if (s.expected) card.appendChild(h('div', { class: 'expected', text: s.expected }));
+    if (s.detail) card.appendChild(h('div', { class: 'detail' }, rich(s.detail)));
+    if (s.expected) card.appendChild(h('div', { class: 'expected' }, inline(s.expected)));
 
     if (marks.length) {
       var box = h('div', { class: 'marks' });
@@ -283,7 +319,7 @@
       secSelect.addEventListener('change', function () { secInput.hidden = secSelect.value !== ''; if (!secInput.hidden) secInput.focus(); });
     }
     var title = h('input', { maxlength: 300, 'aria-label': 'Test case title', placeholder: 'Test case title' });
-    var detail = h('textarea', { maxlength: 4000, 'aria-label': 'What to do', placeholder: 'What to do' });
+    var detail = h('textarea', { maxlength: 4000, 'aria-label': 'What to do', placeholder: 'What to do (a line starting with - is a bullet; [text](https://link) makes a link; **bold**)' });
     var expected = h('textarea', { maxlength: 2000, 'aria-label': 'Expected result', placeholder: 'Expected result' });
     if (s) { title.value = s.title; detail.value = s.detail; expected.value = s.expected; }
     var key = s ? s.id : 'add:' + (sec === null ? '*' : sec === undefined ? '?' : sec);

@@ -42,7 +42,12 @@ button:disabled { opacity: .55; cursor: default; }
 .step.status-pass { border-left: 6px solid var(--pass); }
 .step h3 { font-size: 1.02rem; margin: 0 0 6px; display: flex; gap: 8px; flex-wrap: wrap; align-items: baseline; }
 .num { color: var(--muted); font-variant-numeric: tabular-nums; }
-.detail, .expected { white-space: pre-wrap; margin: 4px 0; overflow-wrap: anywhere; }
+.detail, .expected { margin: 4px 0; overflow-wrap: anywhere; }
+.expected { white-space: pre-wrap; }
+.detail .para { margin: 4px 0; white-space: pre-wrap; }
+.detail .bul { margin: 4px 0; padding-left: 22px; }
+.detail .bul li { margin: 2px 0; }
+a { color: var(--accent); }
 .expected::before { content: "Expected: "; font-weight: 700; }
 .marks { margin: 8px 0; display: flex; flex-direction: column; gap: 6px; }
 .mark { font-size: .9rem; overflow-wrap: anywhere; }
