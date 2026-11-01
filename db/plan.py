@@ -34,8 +34,8 @@ P = [
  ("Part 5: one identity (1 min)", [
   ("Same number, both apps", "Sign in on phone B to the Seller app with 9876543210. Then sign out again.", "The same person signs in to both apps (a buyer who can also open a shop). The push token is removed on sign-out."),
  ]),
- ("Reset", [
-  ("Return to a clean demo", "Run the unseed command, then the seed command again. Do this before each run.", "Demo data is back to the clean state."),
+ ("Reset (maintainer only)", [
+  ("Return to a clean demo (maintainer only, testers skip this)", "**Maintainer only.** Testers cannot run this and should mark it Skip. To get a clean demo before a run, the maintainer runs the unseed command and then the seed command (see the release runbook in the Fayda repo, `infra/README.md`).", "Demo data is back to the clean state."),
  ]),
 ]
 def q(s): return "$q$" + s + "$q$"

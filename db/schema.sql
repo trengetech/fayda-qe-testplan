@@ -1,6 +1,6 @@
 -- QE test plan: its own schema, so nothing here touches the app's tables and the API tests (which wipe `public`) never touch it.
--- Anyone with the page link can read, add results and comments, and add or edit steps (founder's choice, 1 Nov 2026: a small
--- trusted QE group, a name box instead of a login). Nobody can delete: a step is archived, a result is superseded by a newer one.
+-- Anyone who knows the access secret can read, add results and comments, and add or edit steps (founder's choice, 1 Nov 2026: a
+-- small trusted QE group, one shared secret and a name box instead of individual logins). Nobody can delete: a step is archived, a result is superseded by a newer one.
 -- Safe to run again.
 
 create schema if not exists qe;
@@ -44,6 +44,20 @@ create table if not exists qe.notes (
 );
 create index if not exists notes_step_idx on qe.notes (step_id, created_at);
 
+-- The access secret. The page sends what the tester typed in the request header `x-qe-secret`; every rule below lets a row through
+-- only when qe.secret_ok() says that header matches the stored bcrypt hash. Without the secret the public key sees nothing.
+-- The hash is set once, by hand, never from this file (see the README):
+--   insert into qe.access (secret_hash) values (extensions.crypt('<the secret>', extensions.gen_salt('bf', 10)))
+--   on conflict (id) do update set secret_hash = excluded.secret_hash;
+create table if not exists qe.access (id boolean primary key default true check (id), secret_hash text not null);
+alter table qe.access enable row level security;
+revoke all on qe.access from anon;
+create or replace function qe.secret_ok() returns boolean language sql stable security definer set search_path = '' as $$
+  select exists (select 1 from qe.access a where a.secret_hash = extensions.crypt(coalesce(nullif(current_setting('request.headers', true), '')::json ->> 'x-qe-secret', ''), a.secret_hash))
+$$;
+revoke all on function qe.secret_ok() from public;
+grant execute on function qe.secret_ok() to anon;
+
 alter table qe.steps   enable row level security;
 alter table qe.results enable row level security;
 alter table qe.notes   enable row level security;
@@ -55,13 +69,13 @@ drop policy if exists results_read  on qe.results;
 drop policy if exists results_add   on qe.results;
 drop policy if exists notes_read    on qe.notes;
 drop policy if exists notes_add     on qe.notes;
-create policy steps_read   on qe.steps   for select to anon using (true);
-create policy steps_add    on qe.steps   for insert to anon with check (true);
-create policy steps_edit   on qe.steps   for update to anon using (true) with check (true);
-create policy results_read on qe.results for select to anon using (true);
-create policy results_add  on qe.results for insert to anon with check (true);
-create policy notes_read   on qe.notes   for select to anon using (true);
-create policy notes_add    on qe.notes   for insert to anon with check (true);
+create policy steps_read   on qe.steps   for select to anon using ((select qe.secret_ok()));
+create policy steps_add    on qe.steps   for insert to anon with check ((select qe.secret_ok()));
+create policy steps_edit   on qe.steps   for update to anon using ((select qe.secret_ok())) with check ((select qe.secret_ok()));
+create policy results_read on qe.results for select to anon using ((select qe.secret_ok()));
+create policy results_add  on qe.results for insert to anon with check ((select qe.secret_ok()));
+create policy notes_read   on qe.notes   for select to anon using ((select qe.secret_ok()));
+create policy notes_add    on qe.notes   for insert to anon with check ((select qe.secret_ok()));
 
 -- Privileges: read and add everywhere, edit steps only, never delete. Nothing in `public` is granted to anon here.
 grant usage on schema qe to anon;

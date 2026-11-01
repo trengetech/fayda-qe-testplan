@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self' https://*.supabase.co; base-uri 'none'; form-action 'none'">
   <title>Fayda two-phone test plan</title>
-  <link rel="stylesheet" href="styles.css?v=3">
+  <link rel="stylesheet" href="styles.css?v=4">
 </head>
 <body>
   <header class="top">
@@ -13,7 +13,16 @@
     <p class="muted">Phone A runs the Seller app, phone B the Buyer app. Mark each test case Pass, Fail, Blocked or Skip, add a comment, and create or fix test cases. Everyone sees the same results.</p>
   </header>
 
-  <section class="me" aria-label="About you and this run">
+  <section id="gate" class="gate" aria-label="Access" hidden>
+    <form id="gateform">
+      <label>Access secret <input id="secret" type="password" autocomplete="current-password" maxlength="200" required></label>
+      <button type="submit" class="primary">Open</button>
+    </form>
+    <p id="gatemsg" class="banner error" role="alert" hidden></p>
+    <p class="muted">This test plan is private. Ask whoever shared the link for the secret.</p>
+  </section>
+
+  <section class="me protected" aria-label="About you and this run">
     <label>Your name <input id="who" maxlength="80" autocomplete="name" placeholder="Required to mark or comment"></label>
     <label>Run <input id="run" maxlength="60" list="runs" placeholder="Run 1"></label>
     <datalist id="runs"></datalist>
@@ -21,7 +30,7 @@
     <label>Phones <input id="device" maxlength="120" placeholder="e.g. Pixel 7 + Redmi Note 12"></label>
   </section>
 
-  <section class="bar" aria-label="Summary and actions">
+  <section class="bar protected" aria-label="Summary and actions">
     <div id="summary" class="summary" aria-live="polite"></div>
     <div class="actions">
       <button id="newcase" type="button" class="primary">+ New test case</button>
@@ -29,18 +38,19 @@
       <button id="share" type="button">Copy link</button>
       <button id="csv" type="button">Download CSV</button>
       <button id="refresh" type="button">Refresh</button>
+      <button id="lock" type="button">Lock</button>
     </div>
   </section>
 
   <p id="banner" class="banner" role="status" hidden></p>
-  <main id="plan" aria-live="off"></main>
+  <main id="plan" class="protected" aria-live="off"></main>
 
-  <footer class="muted foot">
+  <footer class="muted foot protected">
     <p>Anyone with this link can mark test cases, comment and edit test cases. Nothing can be deleted: a removed test case is only hidden. Results are kept per run, so start a new run (change the Run box) to test again from scratch.</p>
     <p>If something fails: note the screen and the time in the comment. 429 "Too many requests": wait a minute (sign-in is limited to 20 a minute). No push: check notification permission.</p>
   </footer>
 
-  <script src="config.js?v=3"></script>
-  <script src="app.js?v=3"></script>
+  <script src="config.js?v=4"></script>
+  <script src="app.js?v=4"></script>
 </body>
 </html>

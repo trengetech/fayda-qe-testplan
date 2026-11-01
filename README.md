@@ -6,14 +6,14 @@ The page is plain HTML, CSS and JavaScript (no libraries, no build). It talks st
 
 ## For testers
 
-1. Open the page and type your name, the run (for example `Run 1`), the build and the phones you use.
+1. Open the page and enter the access secret (you get it from whoever shared the link; the page remembers it on that device until you press **Lock**). Then type your name, the run (for example `Run 1`), the build and the phones you use.
 2. Work down the steps. Phone A runs the Seller app, phone B the Buyer app.
 3. Press **Pass**, **Fail**, **Blocked** or **Skip**. A **Fail** needs a comment saying what happened.
 4. **Comment** adds a note to a step. **Edit step** fixes the wording. **+ Add step** adds a step to a section. **Remove step** hides a step (nothing is ever deleted).
 5. Change the **Run** box to start a fresh run. Earlier runs stay.
 6. **Copy link** shares the page. **Download CSV** gives the full history of the run.
 
-Anyone with the link can mark steps, comment and edit steps; there is no password (a small trusted group, by choice). Your name is stored in your browser only and sent with each mark.
+Anyone who has the link and the secret can mark test cases, comment and edit test cases (a small trusted group, by choice; one shared secret, no individual accounts). Your name is stored in your browser only and sent with each mark.
 
 ## For the maintainer: setup (once)
 
@@ -30,12 +30,27 @@ Anyone with the link can mark steps, comment and edit steps; there is no passwor
    ```
    Without this, anyone who opens this page could use its key to read or change the app's tables.
 3. **Expose the schema.** In the Supabase dashboard: Project Settings, API, "Exposed schemas": add `qe` (keep `public` out if you can). Save.
-4. **Point the page at the database.** Put the project URL and the **anon** (public) key in `config.js`. Never put the `service_role` key or the database password here: everything in this repo is public.
+4. **Set the access secret** (see above) and **point the page at the database.** Put the project URL and the **anon** (public) key in `config.js`. Never put the `service_role` key or the database password here: everything in this repo is public.
 5. **Publish.** GitHub, Settings, Pages, Source: "Deploy from a branch", branch `main`, folder `/ (root)`.
+
+## Access secret
+
+The test cases, results and comments are readable and writable only with one shared secret. The page asks for it and sends it with every request in the header `x-qe-secret`; the database compares it with a stored bcrypt hash (`qe.secret_ok()` in `db/schema.sql`) and returns nothing otherwise. So the check cannot be skipped by calling the database directly with the public key.
+
+Set or change the secret once, as the database owner (never put the secret in a file or in this repo):
+
+```sql
+insert into qe.access (secret_hash) values (extensions.crypt('<the secret>', extensions.gen_salt('bf', 10)))
+on conflict (id) do update set secret_hash = excluded.secret_hash;
+```
+
+Testers who had the old secret are asked for the new one on their next refresh.
+
+**What the secret does not protect:** this web page's own files (HTML, CSS, JavaScript, this README, `db/schema.sql`) and the APKs in `downloads/` are served publicly by GitHub Pages and anyone who knows or guesses their address can fetch them. Only the data in the database is locked. Protecting the APK files too needs a private host.
 
 ## What the public key can and cannot do
 
-Checked on 1 Nov 2026 by running as the `anon` role:
+Checked on 1 Nov 2026 by running as the `anon` role, **with the secret** (without it: reads return no rows and every write is refused):
 
 | Allowed | Refused |
 |---|---|

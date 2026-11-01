@@ -14,6 +14,7 @@
   var ui = {}; // per-step open form: { mode: 'mark'|'edit'|'add', status, text, ... }
   var el = {};
   var store = safeStorage();
+  var secret = '';
 
   // ---------- small helpers ----------
   function safeStorage() {
@@ -90,6 +91,7 @@
   function call(method, path, body, prefer) {
     var headers = { apikey: cfg.anonKey, Authorization: 'Bearer ' + cfg.anonKey, 'Accept-Profile': 'qe', 'Content-Profile': 'qe', 'Content-Type': 'application/json' };
     if (prefer) headers.Prefer = prefer;
+    if (secret) headers['x-qe-secret'] = secret;
     return fetch(cfg.url.replace(/\/+$/, '') + '/rest/v1/' + path, { method: method, headers: headers, body: body === undefined ? undefined : JSON.stringify(body) }).then(function (r) {
       if (r.status === 204) return null;
       return r.text().then(function (t) {
@@ -387,9 +389,35 @@
     else setBanner('Copy this link: ' + url, false);
   }
 
+  // ---------- access secret ----------
+  // The database only answers when the request carries the right secret (qe.secret_ok in db/schema.sql), so this screen is a
+  // door to a locked room, not just a curtain: without the secret the same address returns nothing.
+  function setLocked(on, text) {
+    if (on) document.body.setAttribute('data-locked', ''); else document.body.removeAttribute('data-locked');
+    el.gate.hidden = !on;
+    el.gatemsg.hidden = !text;
+    el.gatemsg.textContent = text || '';
+    if (on) { state = { steps: [], results: [], notes: [], loaded: false, error: '' }; el.plan.textContent = ''; el.secret.value = ''; }
+  }
+  function verify(candidate) {
+    var keep = secret; secret = candidate;
+    return call('POST', 'rpc/secret_ok', {}).then(function (ok) { if (ok !== true) secret = keep; return ok === true; }, function (e) { secret = keep; throw e; });
+  }
+  function enter(text) {
+    return load().then(function () { setLocked(false, text); render(); });
+  }
+  function lockNow(text) { secret = ''; store.setItem('qe.secret', ''); setLocked(true, text); }
+  function start() {
+    var saved = store.getItem('qe.secret') || '';
+    if (!saved) { setLocked(true); return; }
+    verify(saved).then(function (ok) {
+      if (ok) { enter(); } else { lockNow('The secret has changed. Enter the new one.'); }
+    }).catch(function (e) { setLocked(true, 'Could not reach the database (' + e.message + '). Check your connection and reload.'); });
+  }
+
   // ---------- start ----------
   function boot() {
-    ['who', 'run', 'build', 'device', 'runs', 'mine', 'summary', 'plan', 'banner', 'share', 'csv', 'refresh', 'newcase'].forEach(function (id) { el[id] = document.getElementById(id); });
+    ['who', 'run', 'build', 'device', 'runs', 'mine', 'summary', 'plan', 'banner', 'share', 'csv', 'refresh', 'newcase', 'lock', 'gate', 'gateform', 'gatemsg', 'secret'].forEach(function (id) { el[id] = document.getElementById(id); });
     ['who', 'run', 'build', 'device'].forEach(function (k) {
       el[k].value = store.getItem('qe.' + k) || '';
       el[k].addEventListener('input', function () { store.setItem('qe.' + k, el[k].value); if (k === 'run') render(); });
@@ -399,14 +427,27 @@
     el.share.addEventListener('click', copyLink);
     el.csv.addEventListener('click', downloadCsv);
     el.refresh.addEventListener('click', function () { load().then(render); });
-    render();
-    if (!configured()) return;
-    load().then(function () { render(); if (location.hash.indexOf('#step-') === 0) { var n = document.getElementById(location.hash.slice(1)); if (n) n.scrollIntoView(); } });
+    el.lock.addEventListener('click', function () { lockNow(''); });
+    el.gateform.addEventListener('submit', function (ev) {
+      ev.preventDefault();
+      var candidate = el.secret.value;
+      if (!candidate) return;
+      verify(candidate).then(function (ok) {
+        if (!ok) { setLocked(true, 'That secret is not right.'); return; }
+        store.setItem('qe.secret', candidate);
+        return enter().then(function () { if (location.hash.indexOf('#step-') === 0) { var n = document.getElementById(location.hash.slice(1)); if (n) n.scrollIntoView(); } });
+      }).catch(function (e) { setLocked(true, 'Could not reach the database (' + e.message + '). Try again.'); });
+    });
+    if (!configured()) { setLocked(false); render(); return; }
+    setLocked(true);
+    start();
     setInterval(function () {
       var a = document.activeElement;
       var typing = a && (a.tagName === 'TEXTAREA' || (a.tagName === 'INPUT' && a.type !== 'checkbox'));
-      if (document.hidden || typing) return; // never rebuild the page under someone who is typing
-      load().then(render);
+      if (document.hidden || typing || document.body.hasAttribute('data-locked')) return; // never rebuild the page under someone who is typing
+      load().then(function () {
+        if (state.loaded && !state.steps.length) { return verify(secret).then(function (ok) { if (!ok) lockNow('The secret has changed. Enter the new one.'); }); }
+      }).then(function () { if (!document.body.hasAttribute('data-locked')) render(); }).catch(function () { /* offline: try again next time */ });
     }, POLL_MS);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();

@@ -68,3 +68,8 @@ a { color: var(--accent); }
 
 .earlier { margin: 6px 0; color: var(--muted); }
 .earlier summary { cursor: pointer; min-height: 32px; display: flex; align-items: center; }
+
+body[data-locked] .protected { display: none; }
+.gate { margin: 28px 0; display: grid; gap: 12px; max-width: 420px; }
+.gate form { display: grid; gap: 10px; }
+[hidden] { display: none !important; }
