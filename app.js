@@ -119,7 +119,7 @@
       var o = overall(marks); counts[o || 'none']++;
     });
     el.summary.textContent = '';
-    el.summary.appendChild(h('span', { class: 'pill none', text: state.steps.length + (state.steps.length === 1 ? ' step' : ' steps') }));
+    el.summary.appendChild(h('span', { class: 'pill none', text: state.steps.length + (state.steps.length === 1 ? ' test case' : ' test cases') }));
     ['pass', 'fail', 'blocked', 'skipped', 'none'].forEach(function (k) {
       el.summary.appendChild(h('span', { class: 'pill ' + k, text: counts[k] + ' ' + (k === 'none' ? 'not run' : LABEL[k].toLowerCase()) }));
     });
@@ -130,23 +130,24 @@
     if (!state.loaded) {
       el.plan.appendChild(h('p', { class: 'muted', text: state.error ? '' : 'Loading the plan…' }));
     } else if (!state.steps.length) {
-      el.plan.appendChild(h('p', { class: 'muted', text: 'There are no steps yet.' }));
+      el.plan.appendChild(h('p', { class: 'muted', text: 'There are no test cases yet.' }));
     }
     var sections = []; var bySection = {};
     state.steps.forEach(function (s) {
       if (!bySection[s.section]) { bySection[s.section] = []; sections.push(s.section); }
       bySection[s.section].push(s);
     });
+    if (ui['add:?']) el.plan.appendChild(stepForm(null, undefined));
     sections.forEach(function (sec) {
       var list = bySection[sec];
-      el.plan.appendChild(h('h2', null, sec, h('button', { class: 'linkbtn small', type: 'button', onclick: function () { openAdd(sec); } }, '+ Add step')));
+      el.plan.appendChild(h('h2', null, sec, h('button', { class: 'linkbtn small', type: 'button', onclick: function () { openAdd(sec); } }, '+ Add test case')));
       list.forEach(function (s, i) { el.plan.appendChild(stepCard(s, i + 1, who, onlyMine)); });
       if (ui['add:' + sec]) el.plan.appendChild(stepForm(null, sec));
     });
     if (state.loaded) {
       el.plan.appendChild(h('h2', null, 'New section'));
       if (ui['add:*']) el.plan.appendChild(stepForm(null, null));
-      else el.plan.appendChild(h('button', { type: 'button', onclick: function () { openAdd('*'); } }, '+ Add a section with its first step'));
+      else el.plan.appendChild(h('button', { type: 'button', onclick: function () { openAdd('*'); } }, '+ Add a section with its first test case'));
     }
     window.scrollTo(0, keepScroll);
   }
@@ -205,8 +206,8 @@
     else if (!f) {
       card.appendChild(h('div', { class: 'btnrow' },
         h('button', { class: 'linkbtn', type: 'button', onclick: function () { ui['note:' + s.id] = ''; render(); } }, 'Comment'),
-        h('button', { class: 'linkbtn', type: 'button', onclick: function () { ui[s.id] = { mode: 'edit' }; render(); } }, 'Edit step'),
-        h('button', { class: 'linkbtn', type: 'button', onclick: function () { archive(s); } }, 'Remove step')));
+        h('button', { class: 'linkbtn', type: 'button', onclick: function () { ui[s.id] = { mode: 'edit' }; render(); } }, 'Edit'),
+        h('button', { class: 'linkbtn', type: 'button', onclick: function () { archive(s); } }, 'Remove')));
     }
     return card;
   }
@@ -229,7 +230,7 @@
   function setBanner(text, isError) { msg = { text: text, error: !!isError }; paintBanner(); }
 
   function openMark(id, status) { if (needName()) return; ui[id] = { mode: 'mark', status: status, text: '' }; render(); focusIn('step-' + id, 'textarea'); }
-  function openAdd(sec) { ui['add:' + sec] = true; render(); }
+  function openAdd(sec) { ui['add:' + sec] = true; render(); if (sec === '?') focusIn('plan', 'input[aria-label="Test case title"]'); }
   function focusIn(id, sel) { var n = document.getElementById(id); var t = n && n.querySelector(sel); if (t) t.focus(); }
 
   function markForm(s, f) {
@@ -266,21 +267,33 @@
     return h('div', { class: 'form' }, ta, h('div', { class: 'btnrow' }, save, h('button', { type: 'button', onclick: function () { delete ui['note:' + s.id]; render(); } }, 'Cancel')));
   }
 
-  // One form for editing a step, adding a step to a section, or adding a new section (section === null).
+  // One form for editing a test case, adding one to a section, or adding a new section (section === null).
+  // With section === undefined (the top "New test case" button) the person picks an existing section or types a new one.
   function stepForm(s, sec) {
     var isNew = !s;
-    var secInput = sec === null ? h('input', { maxlength: 120, 'aria-label': 'Section name', placeholder: 'Section name' }) : null;
-    var title = h('input', { maxlength: 300, 'aria-label': 'Step title', placeholder: 'Step title' });
+    var pick = sec === undefined;
+    var secInput = sec === null || pick ? h('input', { maxlength: 120, 'aria-label': 'Section name', placeholder: 'Section name' }) : null;
+    var secSelect = null;
+    if (pick) {
+      var names = []; state.steps.forEach(function (x) { if (names.indexOf(x.section) < 0) names.push(x.section); });
+      secSelect = h('select', { 'aria-label': 'Section' });
+      names.forEach(function (n) { secSelect.appendChild(h('option', { value: n, text: n })); });
+      secSelect.appendChild(h('option', { value: '', text: 'New section…' }));
+      secInput.hidden = names.length > 0;
+      secSelect.addEventListener('change', function () { secInput.hidden = secSelect.value !== ''; if (!secInput.hidden) secInput.focus(); });
+    }
+    var title = h('input', { maxlength: 300, 'aria-label': 'Test case title', placeholder: 'Test case title' });
     var detail = h('textarea', { maxlength: 4000, 'aria-label': 'What to do', placeholder: 'What to do' });
     var expected = h('textarea', { maxlength: 2000, 'aria-label': 'Expected result', placeholder: 'Expected result' });
     if (s) { title.value = s.title; detail.value = s.detail; expected.value = s.expected; }
-    var key = s ? s.id : 'add:' + (sec === null ? '*' : sec);
+    var key = s ? s.id : 'add:' + (sec === null ? '*' : sec === undefined ? '?' : sec);
     var close = function () { if (s) delete ui[s.id]; else delete ui[key]; render(); };
     var save = h('button', { class: 'primary', type: 'button', onclick: function () {
       if (needName()) return;
       var t = clean(title.value, 300).trim();
-      var secName = sec === null ? clean(secInput.value, 120).trim() : sec;
-      if (!t || !secName) { setBanner('A step needs a title' + (sec === null ? ' and a section name' : '') + '.', true); (t ? secInput : title).focus(); return; }
+      var newSection = sec === null || (pick && secSelect.value === '');
+      var secName = newSection ? clean(secInput.value, 120).trim() : pick ? secSelect.value : sec;
+      if (!t || !secName) { setBanner('A test case needs a title' + (newSection ? ' and a section name' : '') + '.', true); (t ? secInput : title).focus(); return; }
       save.disabled = true;
       var w = me();
       var req;
@@ -293,10 +306,11 @@
         req = call('POST', 'steps', { section: secName, section_pos: secPos, pos: pos, title: t, detail: clean(detail.value, 4000), expected: clean(expected.value, 2000), created_by: w.name, updated_by: w.name }, 'return=minimal');
       }
       req.then(function () { close(); setBanner('', false); return load(); })
-        .catch(function (e) { setBanner('Could not save the step (' + e.message + '). Try again.', true); })
+        .catch(function (e) { setBanner('Could not save the test case (' + e.message + '). Try again.', true); })
         .then(render);
-    } }, isNew ? 'Add step' : 'Save changes');
-    var kids = [h('strong', { text: isNew ? (sec === null ? 'New section' : 'New step in "' + sec + '"') : 'Edit step' })];
+    } }, isNew ? 'Add test case' : 'Save changes');
+    var kids = [h('strong', { text: isNew ? (sec === null ? 'New section' : sec === undefined ? 'New test case' : 'New test case in "' + sec + '"') : 'Edit test case' })];
+    if (secSelect) kids.push(secSelect);
     if (secInput) kids.push(secInput);
     kids.push(title, detail, expected, h('div', { class: 'btnrow' }, save, h('button', { type: 'button', onclick: close }, 'Cancel')));
     return h.apply(null, ['div', { class: 'form' }].concat(kids));
@@ -304,9 +318,9 @@
 
   function archive(s) {
     if (needName()) return;
-    if (!window.confirm('Remove this step from the plan? Its results stay in the database and it can be brought back from there.')) return;
+    if (!window.confirm('Remove this test case from the plan? Its results stay in the database and it can be brought back from there.')) return;
     call('PATCH', 'steps?id=eq.' + encodeURIComponent(s.id), { archived: true, updated_by: me().name }, 'return=minimal')
-      .then(load).catch(function (e) { setBanner('Could not remove the step (' + e.message + ').', true); }).then(render);
+      .then(load).catch(function (e) { setBanner('Could not remove the test case (' + e.message + ').', true); }).then(render);
   }
 
   // ---------- export and share ----------
@@ -317,7 +331,7 @@
   }
   function downloadCsv() {
     var run = me().run;
-    var rows = [['Run', 'Section', 'Step', 'Tester', 'Status', 'Current', 'Comment', 'Build', 'Phones', 'Time']];
+    var rows = [['Run', 'Section', 'Test case', 'Tester', 'Status', 'Current', 'Comment', 'Build', 'Phones', 'Time']];
     state.steps.forEach(function (s) {
       var current = {}; currentMarks(s.id, run).forEach(function (m) { current[m.id] = true; });
       var all = state.results.filter(function (r) { return r.step_id === s.id && r.run === run; }).reverse(); // oldest first
@@ -337,12 +351,13 @@
 
   // ---------- start ----------
   function boot() {
-    ['who', 'run', 'build', 'device', 'runs', 'mine', 'summary', 'plan', 'banner', 'share', 'csv', 'refresh'].forEach(function (id) { el[id] = document.getElementById(id); });
+    ['who', 'run', 'build', 'device', 'runs', 'mine', 'summary', 'plan', 'banner', 'share', 'csv', 'refresh', 'newcase'].forEach(function (id) { el[id] = document.getElementById(id); });
     ['who', 'run', 'build', 'device'].forEach(function (k) {
       el[k].value = store.getItem('qe.' + k) || '';
       el[k].addEventListener('input', function () { store.setItem('qe.' + k, el[k].value); if (k === 'run') render(); });
     });
     el.mine.addEventListener('change', render);
+    el.newcase.addEventListener('click', function () { if (ui['add:?']) { delete ui['add:?']; render(); } else openAdd('?'); });
     el.share.addEventListener('click', copyLink);
     el.csv.addEventListener('click', downloadCsv);
     el.refresh.addEventListener('click', function () { load().then(render); });

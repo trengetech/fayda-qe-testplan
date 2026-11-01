@@ -10,7 +10,7 @@
 <body>
   <header class="top">
     <h1>Fayda two-phone test plan</h1>
-    <p class="muted">Phone A runs the Seller app, phone B the Buyer app. Mark each step Pass, Fail, Blocked or Skip, add a comment, and add or fix steps. Everyone sees the same results.</p>
+    <p class="muted">Phone A runs the Seller app, phone B the Buyer app. Mark each test case Pass, Fail, Blocked or Skip, add a comment, and create or fix test cases. Everyone sees the same results.</p>
   </header>
 
   <section class="me" aria-label="About you and this run">
@@ -24,6 +24,7 @@
   <section class="bar" aria-label="Summary and actions">
     <div id="summary" class="summary" aria-live="polite"></div>
     <div class="actions">
+      <button id="newcase" type="button" class="primary">+ New test case</button>
       <label class="check"><input type="checkbox" id="mine"> Only my marks</label>
       <button id="share" type="button">Copy link</button>
       <button id="csv" type="button">Download CSV</button>
@@ -35,7 +36,7 @@
   <main id="plan" aria-live="off"></main>
 
   <footer class="muted foot">
-    <p>Anyone with this link can mark steps, comment and edit steps. Nothing can be deleted: a removed step is only hidden. Results are kept per run, so start a new run (change the Run box) to test again from scratch.</p>
+    <p>Anyone with this link can mark test cases, comment and edit test cases. Nothing can be deleted: a removed test case is only hidden. Results are kept per run, so start a new run (change the Run box) to test again from scratch.</p>
     <p>If something fails: note the screen and the time in the comment. 429 "Too many requests": wait a minute (sign-in is limited to 20 a minute). No push: check notification permission.</p>
   </footer>
 
