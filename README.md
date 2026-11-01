@@ -54,6 +54,10 @@ Descriptions can use a little formatting: a line starting with `- ` is a bullet,
 
 `downloads/` holds the phone APKs the first test case links to (with `SHA256SUMS.txt`). To replace them after a new build, see the release runbook in the Fayda repo (`infra/README.md`). The APKs are public: they talk to the dev server with simulated sign-in.
 
+## Updating the page
+
+GitHub Pages lets browsers keep a page for up to 10 minutes. When you change `app.js`, `styles.css` or `config.js`, also raise the `?v=` number on their lines in `index.html`, so a browser that loads the new page always loads the new script. Someone who still sees old behaviour (for example raw `**bold**` markers) should hard-refresh (Cmd+Shift+R) or wait 10 minutes.
+
 ## Files
 
 - `index.html`, `styles.css`, `app.js`, `config.js`: the page.
