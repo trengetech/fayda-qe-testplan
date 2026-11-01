@@ -46,9 +46,18 @@ Checked on 1 Nov 2026 by running as the `anon` role:
 
 Field lengths and the status values are enforced by the database. Everything typed into the page is shown as text, never as markup, and CSV cells that start with `=`, `+`, `-` or `@` are neutralised so a comment cannot run as a spreadsheet formula.
 
+## Case text formatting
+
+Descriptions can use a little formatting: a line starting with `- ` is a bullet, `**bold**`, `[text](https://link)` and bare `https://` links. A link may only be `https://...` or a file in `downloads/`; anything else is shown as plain text.
+
+## Downloads
+
+`downloads/` holds the phone APKs the first test case links to (with `SHA256SUMS.txt`). To replace them after a new build, see the release runbook in the Fayda repo (`infra/README.md`). The APKs are public: they talk to the dev server with simulated sign-in.
+
 ## Files
 
 - `index.html`, `styles.css`, `app.js`, `config.js`: the page.
+- `downloads/`: the APKs and their checksums.
 - `db/schema.sql`: tables, row rules, privileges.
 - `db/plan.py`: the starting plan; `python3 db/plan.py` writes `db/seed.sql`.
 
